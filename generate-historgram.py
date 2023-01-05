@@ -42,18 +42,20 @@ plt.xlabel('proteins per model+genome')
 # new cell
 # plot distribution of number of models per genome
 c, f=['genome_id'],'pfam_id'
-model_per_genome_count=protein_per_genome_count.groupby(c+[f],as_index=False).count().rename(columns={f:'model_count'})
+
+model_per_genome_count=protein_per_genome_count[c+[f]].groupby(c,as_index=False).count().rename(columns={f:'model_count'})
 
 #new cell
 plt.figure(figsize=(20, 10))
 mx=model_per_genome_count['model_count']
-print(mx)
+print(len(mx))
 print("printing max of mx\n")
-n = int(max(mx)[2:])
+n = int(max(mx))
 print(n)
-plt.hist(model_per_genome_count['model_count'],
-         bins=range(0, 200))
-         #max(mx)))
+
+cutoff=10
+# filter the dataset for only those with >=cutoff
+df=model_per_genome_count[model_per_genome_count['model_count']>=cutoff]
+h=plt.hist(df['model_count'], bins=100)
 plt.xlabel('PFAM models per genome')
 plt.show()
-
