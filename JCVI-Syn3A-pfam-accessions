@@ -1,6 +1,3 @@
-# List of Protein Families with E-value <= 1e-02
-# E-values obtained by doing hmmsearch against JCVI-Syn3A.fasta
-
 PF00003
 PF00004
 PF00005
