@@ -93,9 +93,9 @@ if __name__ == '__main__':
                                  suffixes=['.lft', '.rgt'])
             p_df.to_csv(f'{out_dir}/pairs/{pfam_id_a}+{pfam_id_b}.info.csv')
             with open(f'{out_dir}/glued/{pfam_id_a}.{pfam_id_b}.sth', 'w') as wrt:
+                seq_records = []
                 for ridx, row in p_df.iterrows():
-                    SeqIO.write(
-                        SeqRecord(
+                    seq_records.append(SeqRecord(
                             Seq(row['alignment.lft'] + row['alignment.rgt']),
-                            id=row['protein_id.lft'] + '+' + row['protein_id.rgt']),
-                        wrt, 'stockholm')
+                            id=row['protein_id.lft'] + '+' + row['protein_id.rgt']))
+                SeqIO.write(seq_records, wrt, 'stockholm')
