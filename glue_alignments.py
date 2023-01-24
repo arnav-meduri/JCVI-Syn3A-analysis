@@ -78,7 +78,7 @@ if __name__ == '__main__':
     with open('accessions_sorted.txt') as pfam_f:
         pfams = pfam_f.readlines()
 
-    for i in range(1, (len(pfams) - 1)):
+    for i in range(len(pfams) - 1):
         pfam_id_a = pfams[i].strip()
         align_df_a = stockholm_to_dataframe(pfam_id_a, protein_to_species)
         for j in (range(i+1, len(pfams))):
