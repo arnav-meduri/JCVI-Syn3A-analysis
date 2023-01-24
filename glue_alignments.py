@@ -79,7 +79,7 @@ if __name__ == '__main__':
         pfams = pfam_f.readlines()
 
     for i in range(len(pfams) - 1):
-        for j in (range(1, len(pfams))):
+        for j in (range(i+1, len(pfams))):
             pfam_id_a = pfams[i].strip()
             pfam_id_b = pfams[j].strip()
             print("pairing alignments [%s %s]" % (pfam_id_a, pfam_id_b))
