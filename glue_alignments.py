@@ -98,4 +98,8 @@ if __name__ == '__main__':
                     seq_records.append(SeqRecord(
                             Seq(row['alignment.lft'] + row['alignment.rgt']),
                             id=row['protein_id.lft'] + '+' + row['protein_id.rgt']))
-                SeqIO.write(seq_records, wrt, 'stockholm')
+                if (len(seq_records) > 0):
+                    SeqIO.write(seq_records, wrt, 'stockholm')
+                else:
+                    print("glued alignments [%s %s] have no sequences" % (pfam_id_a, pfam_id_b))
+  
