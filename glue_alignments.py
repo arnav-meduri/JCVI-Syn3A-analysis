@@ -71,20 +71,28 @@ if __name__ == '__main__':
     project_dir = '.'
     stockholm_files_dir = sys.argv[1]  # '/Volumes/Arnav_SSD/BioComputingProject/generated/split_pfam_files'
     out_dir = sys.argv[2]  # '/Volumes/Arnav_SSD/BioComputingProject/generated/'
-    protein_to_genome = pd.read_csv(f'{project_dir}/protein2genome.csv.gz', compression='gzip',
+    protein_to_species = pd.read_csv(f'{project_dir}/protein2genome.csv.gz', compression='gzip',
                                     header=None,
                                     names=['protein_id', 'genome_id']).drop_duplicates()
 
     with open('accessions_sorted.txt') as pfam_f:
         pfams = pfam_f.readlines()
 
-    for i in range(len(pfams) - 1):
+    for i in range(1, (len(pfams) - 1)):
+        pfam_id_a = pfams[i].strip()
+        align_df_a = stockholm_to_dataframe(pfam_id_a, protein_to_species)
         for j in (range(i+1, len(pfams))):
-            pfam_id_a = pfams[i].strip()
+            #pfam_id_a = pfams[i].strip()
             pfam_id_b = pfams[j].strip()
             print("pairing alignments [%s %s]" % (pfam_id_a, pfam_id_b))
-            p_df = pair_alignments(pfam_id_a, pfam_id_b, protein_to_genome)
-            with open(f'{project_dir}/glued/{pfam_id_a}.{pfam_id_b}.sth', 'w') as wrt:
+            align_df_b = stockholm_to_dataframe(pfam_id_b, protein_to_species)
+            #p_df = pair_alignments(pfam_id_a, pfam_id_b, protein_to_species)
+            p_df = pd.merge(left=align_df_a,
+                                 right=align_df_b,
+                                 on=['genome_id'],
+                                 suffixes=['.lft', '.rgt'])
+            p_df.to_csv(f'{out_dir}/pairs/{pfam_id_a}+{pfam_id_b}.info.csv')
+            with open(f'{out_dir}/glued/{pfam_id_a}.{pfam_id_b}.sth', 'w') as wrt:
                 for ridx, row in p_df.iterrows():
                     SeqIO.write(
                         SeqRecord(
