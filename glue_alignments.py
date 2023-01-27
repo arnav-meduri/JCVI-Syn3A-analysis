@@ -22,7 +22,6 @@ def timer(func):
 def parse_protein_name(alignid):
     return alignid.split('.')[0]
 
-
 # first argument is a PFAM accession
 # second argument is a protein_to_species or big_table dataframe
 # we're going to build a dataframe that has as one column the actual sequences
@@ -37,7 +36,9 @@ def stockholm_to_dataframe(pfam_id, protein_to_species):
         # alignment -> protein relationship by parsing the id for that row of the alignment
         # so you can then look up the genome id you parsed from OX attributes
         protein_id = parse_protein_name(indiv.id)  # you've written this already to extract protein_id from protein_name
-        for k, v in {'protein_id': protein_id, 'protein_name': indiv.id, 'alignment': indiv.seq}.items():
+
+        # KR 2023-01-26 needed to change this to str(indiv.seq) or throws error later -- BioPython fixed this in later version you have???
+        for k, v in {'protein_id': protein_id, 'protein_name': indiv.id, 'alignment': str(indiv.seq)}.items():
             pre[k].append(v)
 
     # df0 = pd.merge(left=pd.DataFrame(pre))
@@ -47,59 +48,55 @@ def stockholm_to_dataframe(pfam_id, protein_to_species):
     # create a dataframe that combines the parsed information with the species_id
     # this is an "inner join" that creates the Cartesian product
     # and then returns only rows where the key protein_id was present in both tables
-    return pd.merge(left=df0,
-                    right=protein_to_species[['protein_id', 'genome_id']],
-                    on=['protein_id'])
 
+    # KR mods 2023-01-26
+    full_df = pd.merge(left=df0,
+                       right=protein_to_species[['protein_id', 'genome_id']],
+                       on=['protein_id'])
 
-@timer
-def pair_alignments(pfam_id_a, pfam_id_b, protein_to_species):
-    align_df_a = stockholm_to_dataframe(pfam_id_a, protein_to_species)
-    align_df_b = stockholm_to_dataframe(pfam_id_b, protein_to_species)
+    # compute counts by genome
+    c, f = ['genome_id'], 'protein_id'
+    genome_counts = full_df[c + [f]].groupby(c, as_index=False).count().rename(columns={f: 'count_for_genome'})
 
-    # since both tables have identically named columns that aren't keys
-    # we provide suffixes which will be added to differentiate them
-    paired_df = pd.merge(left=align_df_a,
-                         right=align_df_b,
-                         on=['genome_id'],
-                         suffixes=['.lft', '.rgt'])
-    paired_df.to_csv(f'{out_dir}/pairs/{pfam_id_a}+{pfam_id_b}.info.csv')
-    return paired_df
+    # use inner join as a filter for proteins that are unique to a genome
+    filtered_df = pd.merge(left=genome_counts[genome_counts['count_for_genome'] == 1][['genome_id']],
+                           # select genome_id where count_for_genome==1
+                           right=full_df, on='genome_id')
 
+    return filtered_df
 
 if __name__ == '__main__':
     project_dir = '.'
     stockholm_files_dir = sys.argv[1]  # '/Volumes/Arnav_SSD/BioComputingProject/generated/split_pfam_files'
     out_dir = sys.argv[2]  # '/Volumes/Arnav_SSD/BioComputingProject/generated/'
-    protein_to_species = pd.read_csv(f'{project_dir}/protein2genome.csv.gz', compression='gzip',
-                                    header=None,
-                                    names=['protein_id', 'genome_id']).drop_duplicates()
+    protein_to_species_f = sys.argv[3]
+    protein_to_species = pd.read_csv(protein_to_species_f,
+                                     header=None,
+                                     names=['protein_id', 'genome_id'])
 
-    with open('accessions_sorted.txt') as pfam_f:
-        pfams = pfam_f.readlines()
+    # KR 2023-01-26 - change to using command line to specify set of PFAM
+    pfams = sys.argv[4:]
 
-    for i in range(len(pfams) - 1):
-        pfam_id_a = pfams[i].strip()
-        align_df_a = stockholm_to_dataframe(pfam_id_a, protein_to_species)
-        for j in (range(i+1, len(pfams))):
-            #pfam_id_a = pfams[i].strip()
-            pfam_id_b = pfams[j].strip()
-            print("pairing alignments [%s %s]" % (pfam_id_a, pfam_id_b))
-            align_df_b = stockholm_to_dataframe(pfam_id_b, protein_to_species)
-            #p_df = pair_alignments(pfam_id_a, pfam_id_b, protein_to_species)
-            p_df = pd.merge(left=align_df_a,
-                                 right=align_df_b,
-                                 on=['genome_id'],
-                                 suffixes=['.lft', '.rgt'])
-            p_df.to_csv(f'{out_dir}/pairs/{pfam_id_a}+{pfam_id_b}.info.csv')
-            with open(f'{out_dir}/glued/{pfam_id_a}.{pfam_id_b}.sth', 'w') as wrt:
-                seq_records = []
-                for ridx, row in p_df.iterrows():
-                    seq_records.append(SeqRecord(
-                            Seq(row['alignment.lft'] + row['alignment.rgt']),
-                            id=row['protein_id.lft'] + '+' + row['protein_id.rgt']))
-                if (len(seq_records) > 0):
-                    SeqIO.write(seq_records, wrt, 'stockholm')
-                else:
-                    print("glued alignments [%s %s] have no sequences" % (pfam_id_a, pfam_id_b))
-  
+    pfam_id_a = pfams[0]
+    align_df_a = stockholm_to_dataframe(pfam_id_a, protein_to_species)
+    for pfam_id_b in pfams[1:]:
+        align_df_b = stockholm_to_dataframe(pfam_id_b, protein_to_species)
+        p_df = pd.merge(left=align_df_a,
+                        right=align_df_b,
+                        on=['genome_id'],
+                        suffixes=['.lft', '.rgt'])
+        with open(f'{out_dir}/glued/{pfam_id_a}-{pfam_id_b}.faln', 'w') as wrt:
+            seq_records = []
+            
+            for ridx, row in p_df.iterrows():
+                seq_records.append(
+                    SeqRecord(
+                        Seq(row['alignment.lft'] + row['alignment.rgt']),
+                        id=row['protein_name.lft'] + '+' + row['protein_name.rgt']))
+
+            l = len(seq_records)
+            if l > 0:
+                print("\twriting %s sequences" % l)
+                SeqIO.write(seq_records, wrt, 'fasta')
+            else:
+                print("glued alignments [%s %s] have no sequences" % (pfam_id_a, pfam_id_b))
