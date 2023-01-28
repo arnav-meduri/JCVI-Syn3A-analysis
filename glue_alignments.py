@@ -5,6 +5,8 @@ from Bio.SeqRecord import SeqRecord
 import time
 import sys
 import functools
+import os
+
 
 def timer(func):
     @functools.wraps(func)
@@ -21,6 +23,7 @@ def timer(func):
 
 def parse_protein_name(alignid):
     return alignid.split('.')[0]
+
 
 # first argument is a PFAM accession
 # second argument is a protein_to_species or big_table dataframe
@@ -65,6 +68,7 @@ def stockholm_to_dataframe(pfam_id, protein_to_species):
 
     return filtered_df
 
+
 if __name__ == '__main__':
     project_dir = '.'
     stockholm_files_dir = sys.argv[1]  # '/Volumes/Arnav_SSD/BioComputingProject/generated/split_pfam_files'
@@ -74,20 +78,31 @@ if __name__ == '__main__':
                                      header=None,
                                      names=['protein_id', 'genome_id'])
 
-    # KR 2023-01-26 - change to using command line to specify set of PFAM
-    pfams = sys.argv[4:]
+    pfam_id_a = sys.argv[4]
 
-    pfam_id_a = pfams[0]
+    pfam_set = set(line.strip() for line in open(f'{stockholm_files_dir}/accessions.csv'))
+    if (pfam_id_a in pfam_set):
+        pfam_set.remove(pfam_id_a)
+        assert (len(pfam_set) == 109)
+    else:
+        print("PFAM %s not in set!" % pfam_id_a)
+        exit(0)
+
     align_df_a = stockholm_to_dataframe(pfam_id_a, protein_to_species)
-    for pfam_id_b in pfams[1:]:
+    for pfam_id_b in pfam_set:
         align_df_b = stockholm_to_dataframe(pfam_id_b, protein_to_species)
         p_df = pd.merge(left=align_df_a,
                         right=align_df_b,
                         on=['genome_id'],
                         suffixes=['.lft', '.rgt'])
-        with open(f'{out_dir}/glued/{pfam_id_a}-{pfam_id_b}.faln', 'w') as wrt:
+        if p_df.empty:
+            print("No common between models %s and %s" % (pfam_id_a, pfam_id_b))
+            continue
+
+        os.makedirs(f'{out_dir}/glued-{pfam_id_a}', exist_ok=True)
+        with open(f'{out_dir}/glued-{pfam_id_a}/{pfam_id_a}-{pfam_id_b}.faln', 'w') as wrt:
             seq_records = []
-            
+
             for ridx, row in p_df.iterrows():
                 seq_records.append(
                     SeqRecord(
