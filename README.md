@@ -1,4 +1,4 @@
-## Mycoplasma genitalium JCVI-Syn3A analysis
+## Mycoplasma mycoides JCVI-Syn3A analysis
 
 ### Goal
 Computational Elucidation and Characterization of Protein-Protein Interactions in the Minimal Proteome of Mycoplasma genitalium JCVI-Syn3A
