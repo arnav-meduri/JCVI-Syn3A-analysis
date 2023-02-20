@@ -23,6 +23,6 @@ this systematic reduction process is JCVI-Syn3A.
 Please refer to steps.md file for details on execution
 
 ### Folder structure
-pml - contains pymol scripts automation
-png - contains pair interaction images
-diagrams - statistical information used at various stage during the project 
+* pml - contains pymol scripts automation
+* png - contains pair interaction images
+* diagrams - statistical information used at various stage during the project 
