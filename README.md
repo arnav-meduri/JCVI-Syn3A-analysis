@@ -19,6 +19,9 @@ to be completely resynthesized and booted up as a living cell. Later, the group 
 non-essential genes (genes that could be removed and still have a living cell). The final version of the genome from 
 this systematic reduction process is JCVI-Syn3A.
 
+### Methodology 
+![Execution Framework](./methodology.jpg?raw=true "Execution Framework")
+
 ### Status
 Please refer to steps.md file for details on execution
 
