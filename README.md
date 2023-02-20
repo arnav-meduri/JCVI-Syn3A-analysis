@@ -23,9 +23,9 @@ this systematic reduction process is JCVI-Syn3A.
 ![Execution Framework](./methodology.jpg?raw=true "Execution Framework")
 
 ### Status
-Please refer to steps.md file for details on execution
+Please refer to [steps.md](./steps.md) file for details on execution
 
 ### Folder structure
-* pml - contains pymol scripts automation
-* png - contains pair interaction images
-* diagrams - statistical information used at various stage during the project 
+* [pml](./pml) - pymol scripts automation
+* [png](./png) - pair interaction images
+* [diagrams](./diagrams) - statistical charts generated at various stage of the project 
