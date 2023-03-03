@@ -95,23 +95,26 @@ if __name__ == '__main__':
                         right=align_df_b,
                         on=['genome_id'],
                         suffixes=['.lft', '.rgt'])
-        if p_df.empty:
-            print("No common between models %s and %s" % (pfam_id_a, pfam_id_b))
+
+        mycge = p_df[p_df['genome_id'] == 243273]
+        if mycge.shape[0] == 0:
+            print("Did not find proteins related to 243273, skipping")
             continue
 
         os.makedirs(f'{out_dir}/glued-{pfam_id_a}', exist_ok=True)
-        with open(f'{out_dir}/glued-{pfam_id_a}/{pfam_id_a}-{pfam_id_b}.faln', 'w') as wrt:
-            seq_records = []
+        mycge.to_csv(f'{out_dir}/glued-{pfam_id_a}/{pfam_id_a}-{pfam_id_b}.mycge.csv')
+        seq_records = []
 
-            for ridx, row in p_df.iterrows():
-                seq_records.append(
-                    SeqRecord(
-                        Seq(row['alignment.lft'] + row['alignment.rgt']),
-                        id=row['protein_name.lft'] + '+' + row['protein_name.rgt']))
+        for ridx, row in p_df.iterrows():
+            seq_records.append(
+                SeqRecord(
+                    Seq(row['alignment.lft'] + row['alignment.rgt']),
+                    id=row['protein_name.lft'] + '+' + row['protein_name.rgt']))
 
-            l = len(seq_records)
-            if l > 0:
-                print("\twriting %s sequences" % l)
+        l = len(seq_records)
+        if l > 8192:
+            print("\twriting %s sequences" % l)
+            with open(f'{out_dir}/glued-{pfam_id_a}/{pfam_id_a}-{pfam_id_b}.faln', 'w') as wrt:
                 SeqIO.write(seq_records, wrt, 'fasta')
-            else:
-                print("glued alignments [%s %s] have no sequences" % (pfam_id_a, pfam_id_b))
+        else:
+            print("glued alignments [%s %s] have only %d sequences, skipping" % (pfam_id_a, pfam_id_b, l))
